@@ -134,7 +134,7 @@ def process_geojson_data(input_geojson_path, output_analysis_path):
 # 使用示例
 if __name__ == "__main__":
     # 输入是已有的GeoJSON文件
-    input_path = 'map.geojson'
+    input_path = 'map.json'
     output_path = './earthquake_analysis.json'
     
     process_geojson_data(input_path, output_path)

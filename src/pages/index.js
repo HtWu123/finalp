@@ -2,15 +2,15 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import dynamic from 'next/dynamic';
-import WorldMap from '../components/WorldMap/WorldMap';
-import DepthTimeChart from '../components/DepthTimeChart/DepthTimeChart';
-import MagnitudeFilter from '../components/Filters/MagnitudeFilter';
-import DateFilter from '../components/Filters/DateFilter';
+import WorldMap from '../components/WorldMap';
+import DepthTimeChart from '../components/DepthTimeChart';
+import MagnitudeFilter from '../components/MagnitudeFilter';
+import DateFilter from '../components/DateFilter';
 import styles from '../styles/Home.module.css';
 
 // 使用动态导入并禁用SSR，避免window未定义错误
 const RelationshipNetwork = dynamic(
-  () => import('../components/RelationshipNetwork/RelationshipNetwork'),
+  () => import('../components/RelationshipNetwork'),
   { ssr: false }
 );
 
