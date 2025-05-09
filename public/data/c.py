@@ -9,13 +9,31 @@ def process_geojson_data(input_geojson_path, output_analysis_path):
     print(f"开始处理GeoJSON数据...")
     
     # 确保输出目录存在
-    os.makedirs(os.path.dirname(output_analysis_path), exist_ok=True)
+    output_dir = os.path.dirname(output_analysis_path)
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
     
     # 读取GeoJSON文件
     with open(input_geojson_path, 'r', encoding='utf-8') as f:
         geojson_data = json.load(f)
     
     print(f"GeoJSON数据读取完成，包含 {len(geojson_data['features'])} 个地震记录")
+    
+    # 添加震级分类
+    def classify_magnitude(mag):
+        if mag < 5.0:
+            return "Moderate (4.5-4.9)"
+        elif mag < 6.0:
+            return "Strong (5.0-5.9)"
+        elif mag < 7.0:
+            return "Major (6.0-6.9)"
+        else:
+            return "Great (7.0+)"
+    
+    # 为每个地震特征添加震级分类
+    print("添加震级分类...")
+    for feature in geojson_data['features']:
+        feature['properties']['magnitude_level'] = classify_magnitude(feature['properties']['mag'])
     
     # 提取国家/地区信息并按国家分组
     country_data = {}
@@ -31,7 +49,8 @@ def process_geojson_data(input_geojson_path, output_analysis_path):
             'depth': feature['geometry']['coordinates'][2] if len(feature['geometry']['coordinates']) > 2 else 0,
             'magnitude': feature['properties']['mag'],
             'place': feature['properties']['place'],
-            'id': feature['id']
+            'id': feature['id'],
+            'magnitude_level': feature['properties']['magnitude_level'] # 添加震级分类
         })
     
     # 获取国家地震数量
@@ -86,7 +105,8 @@ def process_geojson_data(input_geojson_path, output_analysis_path):
                             'similarity': similarity,
                             'target_mag': quake2['properties']['mag'],
                             'target_place': quake2['properties']['place'],
-                            'target_time': quake2['properties']['time']
+                            'target_time': quake2['properties']['time'],
+                            'target_magnitude_level': quake2['properties']['magnitude_level'] # 添加震级分类
                         })
     
     # 创建最终数据结构
@@ -101,14 +121,20 @@ def process_geojson_data(input_geojson_path, output_analysis_path):
     with open(output_analysis_path, 'w', encoding='utf-8') as f:
         json.dump(output_data, f)
     
+    # 保存修改后的GeoJSON数据（包含震级分类）
+    output_geojson_path = os.path.join(os.path.dirname(output_analysis_path), 'processed_map.geojson')
+    print(f"正在保存更新后的GeoJSON数据到: {output_geojson_path}")
+    with open(output_geojson_path, 'w', encoding='utf-8') as f:
+        json.dump(geojson_data, f)
+    
     print("处理完成")
     
-    return output_data
+    return output_data, geojson_data
 
 # 使用示例
 if __name__ == "__main__":
     # 输入是已有的GeoJSON文件
     input_path = 'map.geojson'
-    output_path = './earthquake_analysis.json'  # 添加了当前目录的标记
+    output_path = './earthquake_analysis.json'
     
     process_geojson_data(input_path, output_path)
