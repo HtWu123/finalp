@@ -113,9 +113,10 @@ const MapComponent = ({
   };
 
   // 根据震级获取半径
-  const getRadius = (magnitude) => {
-    return Math.max(magnitude * 1.5, 4);
-  };
+  // const getRadius = (magnitude) => {
+  //   return Math.max(magnitude * 1.5, 4);
+  // };
+  const getRadius = () => 5;
 
   // 处理标记悬停
   const handleMarkerHover = (earthquake) => {
@@ -155,10 +156,11 @@ const MapComponent = ({
               earthquake.geometry.coordinates[1], 
               earthquake.geometry.coordinates[0]
             ]}
-            radius={getRadius(earthquake.properties.mag)}
+            // radius={getRadius(earthquake.properties.mag)}
+            radius={getRadius()}
             fillColor={getColor(earthquake.properties.mag)}
-            color="#000"
-            weight={1}
+            // color="#000"
+            weight={0.5}
             opacity={1}
             fillOpacity={0.8}
             eventHandlers={{

@@ -134,13 +134,14 @@ const DepthTimeChart = ({ countryData, country }) => {
               }
               
               const { cx, cy } = props;
-              const size = props.payload.magnitude * 3; // Scale the size based on magnitude
-              
+              // const size = props.payload.magnitude * 2; // Scale the size based on magnitude
+              let size = 1;
               // Get color based on magnitude
               let color = '#91bfdb';
-              if (props.payload.magnitude >= 7.0) color = '#d73027';
-              else if (props.payload.magnitude >= 6.0) color = '#fc8d59';
-              else if (props.payload.magnitude >= 5.0) color = '#fee08b';
+              if (props.payload.magnitude >= 7.0) {color = '#d73027'; size = 12;
+              }else if (props.payload.magnitude >= 6.0) {color = '#fc8d59';size = 8;
+              }else if (props.payload.magnitude >= 5.0) {color = '#fee08b';size = 5;
+              }else if (props.payload.magnitude >= 5.0) {color = '#fee08b';size = 3;}
               
               return (
                 <circle
@@ -149,7 +150,7 @@ const DepthTimeChart = ({ countryData, country }) => {
                   r={size}
                   fill={color}
                   stroke="#000"
-                  strokeWidth={1}
+                  strokeWidth={0.1}
                 />
               );
             }}
