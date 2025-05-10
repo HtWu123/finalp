@@ -82,7 +82,7 @@ def process_geojson_data(input_geojson_path, output_analysis_path):
         
         # 为每个重大地震，寻找距离相近且时间相近的其他地震
         for quake2 in geojson_data['features']:
-            if quake1['id'] != quake2['id'] and quake2['properties']['mag'] >= 5.0:
+            if quake1['id'] != quake2['id'] and quake2['properties']['mag'] >= 4.5:
                 # 计算时间差（毫秒转天）
                 time_diff = abs(quake1['properties']['time'] - quake2['properties']['time']) / (24 * 60 * 60 * 1000)
                 
@@ -95,9 +95,9 @@ def process_geojson_data(input_geojson_path, output_analysis_path):
                 mag_diff = abs(quake1['properties']['mag'] - quake2['properties']['mag'])
                 
                 # 如果地震间隔时间不超过7天且距离不超过5度，则认为有关联
-                if time_diff <= 7 and location_diff <= 5:
+                if time_diff <= 7 and location_diff <= 6:
                     # 计算相似度（加权差异的倒数）
-                    similarity = 1 / (1 + 0.3*time_diff + 0.5*location_diff + 0.2*mag_diff)
+                    similarity = 1 / (1 + 0.4*time_diff + 0.5*location_diff + 0.1*mag_diff)
                     
                     if similarity > 0.25:  # 只包含显著关系
                         quake_relationships[quake_id].append({
