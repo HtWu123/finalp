@@ -11,6 +11,7 @@ const MapComponent = ({
   onEarthquakeClick
 }) => {
   const [filteredData, setFilteredData] = useState([]);
+  const [activeEarthquake, setActiveEarthquake] = useState(null);
 
   // 当数据或筛选器更改时应用筛选
   useEffect(() => {
@@ -102,6 +103,9 @@ const MapComponent = ({
     }
     
     setFilteredData(filtered);
+    
+    // 重置活动地震点
+    setActiveEarthquake(null);
   }, [earthquakeData, selectedMagnitude, selectedDateRange]);
 
   // 根据震级获取颜色
@@ -112,11 +116,13 @@ const MapComponent = ({
     return '#91bfdb';                       // 中等 - 蓝色
   };
 
-  // 根据震级获取半径
-  // const getRadius = (magnitude) => {
-  //   return Math.max(magnitude * 1.5, 4);
-  // };
-  const getRadius = () => 5;
+  // 根据震级和是否是活动点获取半径
+  const getRadius = (earthquake) => {
+    const isActive = activeEarthquake && 
+                    activeEarthquake.properties.id === earthquake.properties.id;
+    const baseRadius = 5;
+    return isActive ? baseRadius * 1.5 : baseRadius;
+  };
 
   // 处理标记悬停
   const handleMarkerHover = (earthquake) => {
@@ -131,13 +137,15 @@ const MapComponent = ({
 
   // 处理标记点击
   const handleMarkerClick = (earthquake) => {
+    setActiveEarthquake(earthquake); // 设置当前活动的地震点
+    
     if (onEarthquakeClick) {
       onEarthquakeClick(earthquake);
     }
   };
 
   return (
-    <div className="world-map-container" style={{ height: '500px', width: '100%' }}>
+    <div className="world-map-container" style={{ height: '100%', width: '100%' }}>
       <MapContainer 
         center={[20, 0]} 
         zoom={2} 
@@ -149,38 +157,42 @@ const MapComponent = ({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         
-        {filteredData.map((earthquake) => (
-          <CircleMarker
-            key={earthquake.properties.id || earthquake.id}
-            center={[
-              earthquake.geometry.coordinates[1], 
-              earthquake.geometry.coordinates[0]
-            ]}
-            // radius={getRadius(earthquake.properties.mag)}
-            radius={getRadius()}
-            fillColor={getColor(earthquake.properties.mag)}
-            // color="#000"
-            weight={0.5}
-            opacity={1}
-            fillOpacity={0.8}
-            eventHandlers={{
-              mouseover: () => handleMarkerHover(earthquake),
-              click: () => handleMarkerClick(earthquake)
-            }}
-          >
-            <Tooltip>
-              <div>
-                <strong>震级 {earthquake.properties.mag}</strong>
-                <p>{earthquake.properties.place}</p>
-                <p>深度: {earthquake.properties.depth || earthquake.geometry.coordinates[2]} km</p>
-                <p>时间: {new Date(earthquake.properties.time).toLocaleString()}</p>
-                {earthquake.properties.magnitude_level && (
-                  <p>分类: {earthquake.properties.magnitude_level}</p>
-                )}
-              </div>
-            </Tooltip>
-          </CircleMarker>
-        ))}
+        {filteredData.map((earthquake) => {
+          const isActive = activeEarthquake && 
+                          activeEarthquake.properties.id === earthquake.properties.id;
+          
+          return (
+            <CircleMarker
+              key={earthquake.properties.id || earthquake.id}
+              center={[
+                earthquake.geometry.coordinates[1], 
+                earthquake.geometry.coordinates[0]
+              ]}
+              radius={getRadius(earthquake)}
+              fillColor={getColor(earthquake.properties.mag)}
+              weight={isActive ? 2 : 0.5}
+              color={isActive ? '#000' : '#333'}
+              opacity={1}
+              fillOpacity={isActive ? 1 : 0.8}
+              eventHandlers={{
+                mouseover: () => handleMarkerHover(earthquake),
+                click: () => handleMarkerClick(earthquake)
+              }}
+            >
+              <Tooltip>
+                <div>
+                  <strong>震级 {earthquake.properties.mag}</strong>
+                  <p>{earthquake.properties.place}</p>
+                  <p>深度: {earthquake.properties.depth || earthquake.geometry.coordinates[2]} km</p>
+                  <p>时间: {new Date(earthquake.properties.time).toLocaleString()}</p>
+                  {earthquake.properties.magnitude_level && (
+                    <p>分类: {earthquake.properties.magnitude_level}</p>
+                  )}
+                </div>
+              </Tooltip>
+            </CircleMarker>
+          );
+        })}
       </MapContainer>
     </div>
   );

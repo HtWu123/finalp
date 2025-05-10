@@ -2,15 +2,15 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import dynamic from 'next/dynamic';
-import WorldMap from '../components/WorldMap';
-import DepthTimeChart from '../components/DepthTimeChart';
-import MagnitudeFilter from '../components/MagnitudeFilter';
-import DateFilter from '../components/DateFilter';
+import WorldMap from '../components/WorldMap.js';
+import DepthTimeChart from '../components/DepthTimeChart.js';
+import MagnitudeFilter from '../components/MagnitudeFilter.js';
+import DateFilter from '../components/DateFilter.js';
 import styles from '../styles/Home.module.css';
 
 // 使用动态导入并禁用SSR，避免window未定义错误
 const RelationshipNetwork = dynamic(
-  () => import('../components/RelationshipNetwork'),
+  () => import('../components/RelationshipNetwork.js'),
   { ssr: false }
 );
 
@@ -24,6 +24,7 @@ export default function Home() {
   const [selectedEarthquake, setSelectedEarthquake] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isPanelOpen, setIsPanelOpen] = useState(false); // 控制面板显示状态
 
   // 加载数据 - 使用useEffect确保只在客户端执行
   useEffect(() => {
@@ -175,9 +176,15 @@ export default function Home() {
     // 不设置selectedEarthquake，因为这只是悬停
   };
 
-  // 处理地震点击事件
+  // 处理地震点击事件 - 点击后打开面板
   const handleEarthquakeClick = (earthquake) => {
     setSelectedEarthquake(earthquake);
+    setIsPanelOpen(true); // 打开详情面板
+  };
+
+  // 关闭面板的处理函数
+  const handleClosePanel = () => {
+    setIsPanelOpen(false);
   };
 
   return (
@@ -206,8 +213,8 @@ export default function Home() {
             <p>请确保您的数据文件位于正确的位置: public/data/map.geojson</p>
           </div>
         ) : (
-          <>
-            <div className={styles.filters}>
+          <div className={styles.contentContainer}>
+            <div className={styles.filtersContainer}>
               <MagnitudeFilter 
                 selectedMagnitude={selectedMagnitude} 
                 onMagnitudeChange={setSelectedMagnitude} 
@@ -227,30 +234,48 @@ export default function Home() {
                 onEarthquakeClick={handleEarthquakeClick}
               />
             </div>
-
-            <div className={styles.chartsContainer}>
-              <div className={styles.chartBox}>
-                <DepthTimeChart 
-                  countryData={analysisData?.country_data} 
-                  country={selectedCountry} 
-                />
+            
+            {/* 滑动详情面板 */}
+            <div className={`${styles.detailPanel} ${isPanelOpen ? styles.open : ''}`}>
+              <div className={styles.panelHeader}>
+                {selectedEarthquake && (
+                  <h2 className={styles.panelTitle}>
+                    地震详情: {selectedEarthquake.properties.place} ({selectedEarthquake.properties.mag} 级)
+                  </h2>
+                )}
+                <button 
+                  className={styles.closeButton}
+                  onClick={handleClosePanel}
+                  aria-label="关闭面板"
+                >
+                  ×
+                </button>
               </div>
               
-              <div className={styles.chartBox}>
-                {selectedEarthquake ? (
-                  <RelationshipNetwork 
-                    relationships={analysisData?.relationships}
-                    selectedEarthquake={selectedEarthquake}
-                    earthquakeData={earthquakeData}
+              <div className={styles.panelContent}>
+                <div className={styles.chartContainer}>
+                  <DepthTimeChart 
+                    countryData={analysisData?.country_data} 
+                    country={selectedCountry} 
                   />
-                ) : (
-                  <div className={styles.selectPrompt}>
-                    <p>请点击地图上的地震点查看关系网络</p>
-                  </div>
-                )}
+                </div>
+                
+                <div className={styles.chartContainer}>
+                  {selectedEarthquake ? (
+                    <RelationshipNetwork 
+                      relationships={analysisData?.relationships}
+                      selectedEarthquake={selectedEarthquake}
+                      earthquakeData={earthquakeData}
+                    />
+                  ) : (
+                    <div className={styles.selectPrompt}>
+                      <p>请点击地图上的地震点查看关系网络</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </>
+          </div>
         )}
       </main>
 

@@ -1,22 +1,14 @@
-/* src/styles/Home.module.css */
+/* styles/Home.module.css */
+
 .container {
   min-height: 100vh;
-  padding: 0 1rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-}
-
-.main {
-  width: 100%;
-  max-width: 1200px;
-  padding: 2rem 0;
-  flex: 1;
+  padding: 0 0.5rem;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
   align-items: center;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .title {
@@ -24,19 +16,173 @@
   line-height: 1.15;
   font-size: 2.5rem;
   text-align: center;
+  margin-top: 2rem;
+  margin-bottom: 0.5rem;
 }
 
 .description {
   text-align: center;
   line-height: 1.5;
   font-size: 1.25rem;
-  margin-top: 1rem;
   margin-bottom: 2rem;
 }
 
+.main {
+  width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* 内容容器 */
+.contentContainer {
+  position: relative;
+  width: 100%;
+  height: calc(100vh - 220px);
+  min-height: 500px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 筛选器容器 */
+.filtersContainer {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #f5f5f5;
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 10px;
+  z-index: 5;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* 地图容器 */
+.mapContainer {
+  flex: 1;
+  width: 100%;
+  position: relative;
+  border: 1px solid #eaeaea;
+  border-radius: 5px;
+  overflow: hidden;
+  z-index: 1;
+  background-color: #f8f8f8;
+}
+
+/* 滑动详情面板 */
+.detailPanel {
+  position: absolute;
+  right: -50%;
+  top: 0;
+  width: 50%;
+  height: 100%;
+  background: white;
+  transition: right 0.3s ease;
+  z-index: 10;
+  box-shadow: -3px 0 10px rgba(0, 0, 0, 0.1);
+  border-left: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  border-radius: 5px 0 0 5px;
+}
+
+/* 面板打开状态 */
+.detailPanel.open {
+  right: 0;
+}
+
+/* 面板头部 */
+.panelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #eaeaea;
+  background-color: #f9f9f9;
+  border-radius: 5px 0 0 0;
+}
+
+.panelTitle {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #333;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 关闭按钮 */
+.closeButton {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.closeButton:hover {
+  background-color: #ebebeb;
+  color: #333;
+}
+
+/* 面板内容 */
+.panelContent {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* 图表容器 */
+.chartContainer {
+  flex: 1;
+  min-height: 250px;
+  border: 1px solid #eaeaea;
+  border-radius: 5px;
+  overflow: hidden;
+  background-color: white;
+}
+
+.selectPrompt {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  padding: 20px;
+  color: #666;
+  text-align: center;
+  background-color: #f9f9f9;
+}
+
+/* 加载和错误状态 */
+.loading, .error {
+  margin: 2rem auto;
+  text-align: center;
+  color: #666;
+  padding: 2rem;
+}
+
+.error {
+  color: #e53e3e;
+}
+
+/* 底部栏 */
 .footer {
   width: 100%;
-  height: 60px;
+  height: 80px;
   border-top: 1px solid #eaeaea;
   display: flex;
   flex-direction: column;
@@ -47,135 +193,35 @@
 
 .footer p {
   margin: 0.25rem 0;
-  font-size: 0.9rem;
   color: #666;
 }
 
-.loading, .error {
-  margin: 2rem 0;
-  padding: 1rem;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  width: 100%;
-  text-align: center;
-}
-
-.error {
-  color: #721c24;
-  background-color: #f8d7da;
-  border: 1px solid #f5c6cb;
-}
-
-.mapContainer {
-  width: 100%;
-  height: 500px;
-  margin-bottom: 2rem;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.chartsContainer {
-  width: 100%;
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 2rem;
-  margin-bottom: 2rem;
-}
-
-.chartBox {
-  flex: 1;
-  min-width: 300px;
-  height: 400px;
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  padding: 1rem;
-}
-
-.filters {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
+/* 响应式布局 */
 @media (max-width: 768px) {
-  .chartsContainer {
+  .filtersContainer {
     flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
   }
   
-  .chartBox {
-    width: 100%;
-  }
-  
-  .filters {
-    flex-direction: column;
+  .detailPanel {
+    width: 80%;
+    right: -80%;
   }
 }
 
-.selectPrompt {
-  height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  color: #6c757d;
+/* 添加面板切换时的暗色背景遮罩（可选） */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.3);
+  z-index: 5;
+  display: none;
 }
 
-/* 修复DateFilter组件的丢失代码 */
-/* src/components/Filters/DateFilter.js 中缺少的代码部分 */
-/* 
-  return (
-    <div className="date-filter">
-      <label htmlFor="date-select">Filter by Date: </label>
-      <select 
-        id="date-select" 
-        value={selectedDateRange ? dateRanges.find(r => 
-          r.range && selectedDateRange.start && 
-          r.range.start.getTime() === selectedDateRange.start.getTime())?.value || 'all' : 'all'} 
-        onChange={handleChange}
-        className="filter-select"
-      >
-        {dateRanges.map(range => (
-          <option key={range.value} value={range.value}>
-            {range.label}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-};
-*/
-
-/* 全局样式 */
-/* src/styles/globals.css */
-/*
-html,
-body {
-  padding: 0;
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
-    Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+.overlay.visible {
+  display: block;
 }
-
-* {
-  box-sizing: border-box;
-}
-
-.filter-select {
-  padding: 0.5rem;
-  border-radius: 4px;
-  border: 1px solid #ccc;
-  background-color: white;
-  font-size: 1rem;
-  margin-left: 0.5rem;
-}
-
-.magnitude-filter, .date-filter {
-  margin: 0.5rem;
-}
-*/
