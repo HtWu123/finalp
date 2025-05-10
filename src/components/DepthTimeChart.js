@@ -127,7 +127,7 @@ const DepthTimeChart = ({ countryData, country }) => {
         borderRadius: '4px',
         color: '#666'
       }}>
-        <p>选择地图上的地震点以查看深度-时间数据</p>
+        <p>点击地图上的地震点以查看深度-时间数据</p>
       </div>
     );
   }

@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 
-const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData }) => {
+const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData, onNodeHover }) => {
   const svgRef = useRef(null);
   const [generatedRelationships, setGeneratedRelationships] = useState(null);
   
@@ -66,9 +66,11 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
             
             // Only include significant relationships
             if (similarity > 0.25) {
+              const isLargerQuake = quake2.properties.mag > selectedEarthquake.properties.mag;
+              
               newRelationships[quakeId].push({
                 target_id: quake2.id || quake2.properties.id,
-                similarity: adjustedSimilarity,
+                similarity: similarity, // Fixed the variable name from adjustedSimilarity to similarity
                 target_mag: quake2.properties.mag,
                 target_place: quake2.properties.place,
                 target_time: quake2.properties.time,
@@ -140,7 +142,9 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
         magnitude: selectedEarthquake.properties.mag,
         place: selectedEarthquake.properties.place,
         isCenter: true,
-        time: new Date(selectedEarthquake.properties.time).toLocaleString()
+        time: new Date(selectedEarthquake.properties.time).toLocaleString(),
+        // 存储原始地震数据的引用，用于地图高亮
+        originalData: selectedEarthquake
       }
     ];
     
@@ -148,13 +152,20 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
     
     // Add related earthquakes
     quakeRelationships.forEach(rel => {
+      // 找到原始地震数据，用于在地图上高亮
+      const originalQuake = earthquakeData.features.find(
+        eq => (eq.id || eq.properties.id) === rel.target_id
+      );
+      
       nodes.push({
         id: rel.target_id,
         magnitude: rel.target_mag,
         place: rel.target_place,
         isCenter: false,
         isLarger: rel.isLarger, // 添加是否是更大地震的标记
-        time: new Date(rel.target_time).toLocaleString()
+        time: new Date(rel.target_time).toLocaleString(),
+        // 存储原始地震数据的引用，用于地图高亮
+        originalData: originalQuake
       });
       
       links.push({
@@ -226,16 +237,9 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
       .style("z-index", "1000")
       .style("opacity", 0);
     
-    // Add hover effects and tooltip interaction
+    // 添加悬停显示tooltip的效果
     node.on("mouseover", function(event, d) {
-        // Highlight the node
-        d3.select(this)
-          .transition()
-          .duration(200)
-          .attr("stroke", "#ff0000")
-          .attr("stroke-width", 2);
-        
-        // Show tooltip with more detailed information
+        // 仅显示tooltip，不高亮节点和地图上的点
         tooltip.transition()
           .duration(200)
           .style("opacity", 0.9);
@@ -270,17 +274,39 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
           .style("top", (event.pageY - 28) + "px");
       })
       .on("mouseout", function() {
-        // Restore original node appearance
-        d3.select(this)
-          .transition()
-          .duration(500)
-          .attr("stroke", "#fff")
-          .attr("stroke-width", d => d.isCenter ? 2 : 1);
-        
         // Hide tooltip
         tooltip.transition()
           .duration(500)
           .style("opacity", 0);
+      })
+      // 添加点击事件
+      .on("click", function(event, d) {
+        // 清除所有节点的高亮
+        node.transition()
+          .duration(200)
+          .attr("stroke", "#fff")
+          .attr("stroke-width", d => d.isCenter ? 2 : 1);
+        
+        // 如果点击的是中心节点，取消选择
+        if (d.isCenter) {
+          // 调用传入的onNodeHover回调，传递null表示取消选择
+          if (onNodeHover) {
+            onNodeHover(null);
+          }
+          return;
+        }
+        
+        // 高亮当前点击的节点
+        d3.select(this)
+          .transition()
+          .duration(200)
+          .attr("stroke", "#ff0000")
+          .attr("stroke-width", 2);
+        
+        // 调用传入的onNodeHover回调，传递原始地震数据
+        if (onNodeHover && d.originalData) {
+          onNodeHover(d.originalData);
+        }
       });
     
     // Add labels for center node and high-magnitude nodes
@@ -393,15 +419,15 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
         .style("font-size", "8px");
     });
     
-    // Add hover instruction
+    // Add click instruction
     legend.append("text")
       .attr("x", 0)
       .attr("y", 23 + legendItems.length * 15 + 25 + relationshipFactors.length * 12 + 10)
-      .text("提示: 将鼠标悬停在节点上可查看详细信息")
+      .text("提示: 悬停查看详情，点击节点在地图上高亮显示")
       .style("font-size", "8px")
       .style("font-style", "italic");
     
-  }, [selectedEarthquake, earthquakeData, effectiveRelationships]);
+  }, [selectedEarthquake, earthquakeData, effectiveRelationships, onNodeHover]);
   
   // If no earthquake selected, show prompt message
   if (!selectedEarthquake) {

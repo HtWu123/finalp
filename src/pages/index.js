@@ -22,6 +22,7 @@ export default function Home() {
   const [selectedDateRange, setSelectedDateRange] = useState(null);
   const [selectedCountry, setSelectedCountry] = useState(null);
   const [selectedEarthquake, setSelectedEarthquake] = useState(null);
+  const [selectedNetworkNode, setSelectedNetworkNode] = useState(null); // 改名：存储关系网络中选中的节点
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false); // 控制面板显示状态
@@ -182,6 +183,11 @@ export default function Home() {
     setIsPanelOpen(true); // 打开详情面板
   };
 
+  // 处理关系网络节点点击事件
+  const handleNetworkNodeClick = (earthquake) => {
+    setSelectedNetworkNode(earthquake);
+  };
+
   // 关闭面板的处理函数
   const handleClosePanel = () => {
     setIsPanelOpen(false);
@@ -232,6 +238,7 @@ export default function Home() {
                 selectedDateRange={selectedDateRange}
                 onEarthquakeHover={handleEarthquakeHover}
                 onEarthquakeClick={handleEarthquakeClick}
+                selectedNetworkNode={selectedNetworkNode} // 传递关系网络中选中的节点
               />
             </div>
             
@@ -266,6 +273,7 @@ export default function Home() {
                       relationships={analysisData?.relationships}
                       selectedEarthquake={selectedEarthquake}
                       earthquakeData={earthquakeData}
+                      onNodeHover={handleNetworkNodeClick} // 改为传递节点点击事件处理函数
                     />
                   ) : (
                     <div className={styles.selectPrompt}>

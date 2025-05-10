@@ -1,17 +1,36 @@
 // src/components/WorldMap/MapComponent.js
-import { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Tooltip } from 'react-leaflet';
+import { useState, useEffect, useRef } from 'react';
+import { MapContainer, TileLayer, CircleMarker, Tooltip, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+
+// 创建一个组件来响应地图更新
+const MapUpdater = ({ selectedNetworkNode }) => {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (selectedNetworkNode) {
+      // 当有选中的网络节点时，将地图中心移动到该地震位置
+      map.setView(
+        [selectedNetworkNode.geometry.coordinates[1], selectedNetworkNode.geometry.coordinates[0]],
+        map.getZoom()
+      );
+    }
+  }, [selectedNetworkNode, map]);
+  
+  return null;
+};
 
 const MapComponent = ({ 
   earthquakeData, 
   selectedMagnitude, 
   selectedDateRange, 
   onEarthquakeHover,
-  onEarthquakeClick
+  onEarthquakeClick,
+  selectedNetworkNode // 改名: 从关系网络中选中的地震
 }) => {
   const [filteredData, setFilteredData] = useState([]);
   const [activeEarthquake, setActiveEarthquake] = useState(null);
+  const markersRef = useRef({}); // 用于存储地震点的引用
 
   // 当数据或筛选器更改时应用筛选
   useEffect(() => {
@@ -106,6 +125,9 @@ const MapComponent = ({
     
     // 重置活动地震点
     setActiveEarthquake(null);
+    
+    // 重置标记引用
+    markersRef.current = {};
   }, [earthquakeData, selectedMagnitude, selectedDateRange]);
 
   // 根据震级获取颜色
@@ -120,29 +142,83 @@ const MapComponent = ({
   const getRadius = (earthquake) => {
     const isActive = activeEarthquake && 
                     activeEarthquake.properties.id === earthquake.properties.id;
+    const isSelected = selectedNetworkNode && 
+                    selectedNetworkNode.properties.id === earthquake.properties.id;
+    
+    // 基础半径
     const baseRadius = 5;
-    return isActive ? baseRadius * 1.5 : baseRadius;
-  };
-
-  // 处理标记悬停
-  const handleMarkerHover = (earthquake) => {
-    if (onEarthquakeHover) {
-      // 从地点获取国家（逗号后的最后部分）
-      const place = earthquake.properties.place;
-      const country = place.includes(', ') ? place.split(', ').pop() : "Unknown";
-      
-      onEarthquakeHover(country, earthquake);
+    
+    // 如果是当前活动的或被关系网络选中的地震点，增大半径
+    if (isActive || isSelected) {
+      return baseRadius * 1.5;
     }
+    
+    return baseRadius;
   };
 
-  // 处理标记点击
+  // 处理标记点击事件
   const handleMarkerClick = (earthquake) => {
     setActiveEarthquake(earthquake); // 设置当前活动的地震点
+    
+    // 从地点获取国家（逗号后的最后部分）
+    const place = earthquake.properties.place;
+    const country = place.includes(', ') ? place.split(', ').pop() : "Unknown";
+    
+    // 同时更新国家和调用点击回调
+    if (onEarthquakeHover) {
+      onEarthquakeHover(country, earthquake);
+    }
     
     if (onEarthquakeClick) {
       onEarthquakeClick(earthquake);
     }
   };
+
+  // 存储或获取地震点的引用
+  const storeMarkerRef = (earthquake, ref) => {
+    if (ref) {
+      const id = earthquake.properties.id || earthquake.id;
+      markersRef.current[id] = ref;
+    }
+  };
+
+  // 检查地震点是否被关系网络选中
+  const isEarthquakeSelected = (earthquake) => {
+    if (!selectedNetworkNode) return false;
+    
+    const earthquakeId = earthquake.properties.id || earthquake.id;
+    const selectedId = selectedNetworkNode.properties.id || selectedNetworkNode.id;
+    
+    return earthquakeId === selectedId;
+  };
+
+  // 当选中的网络节点改变时，更新相应的标记样式
+  useEffect(() => {
+    // 遍历所有标记，重置样式
+    Object.values(markersRef.current).forEach(marker => {
+      if (marker && marker.options) {
+        marker.setStyle({
+          weight: 0.5,
+          color: '#333',
+          fillOpacity: 0.8
+        });
+      }
+    });
+    
+    // 如果有被选中的网络节点对应的地震点，更新其样式
+    if (selectedNetworkNode) {
+      const selectedId = selectedNetworkNode.properties.id || selectedNetworkNode.id;
+      const marker = markersRef.current[selectedId];
+      
+      if (marker) {
+        marker.setStyle({
+          weight: 2,
+          color: '#ff0000',
+          fillOpacity: 1
+        });
+      }
+    }
+  }, [selectedNetworkNode]);
 
   return (
     <div className="world-map-container" style={{ height: '100%', width: '100%' }}>
@@ -157,12 +233,17 @@ const MapComponent = ({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         
+        {/* 添加响应地图更新的组件 */}
+        <MapUpdater selectedNetworkNode={selectedNetworkNode} />
+        
         {filteredData.map((earthquake) => {
           const isActive = activeEarthquake && 
                           activeEarthquake.properties.id === earthquake.properties.id;
+          const isSelected = isEarthquakeSelected(earthquake);
           
           return (
             <CircleMarker
+              ref={(ref) => storeMarkerRef(earthquake, ref)}
               key={earthquake.properties.id || earthquake.id}
               center={[
                 earthquake.geometry.coordinates[1], 
@@ -170,12 +251,11 @@ const MapComponent = ({
               ]}
               radius={getRadius(earthquake)}
               fillColor={getColor(earthquake.properties.mag)}
-              weight={isActive ? 2 : 0.5}
-              color={isActive ? '#000' : '#333'}
+              weight={isActive || isSelected ? 2 : 0.5}
+              color={isSelected ? '#ff0000' : (isActive ? '#000' : '#333')}
               opacity={1}
-              fillOpacity={isActive ? 1 : 0.8}
+              fillOpacity={isActive || isSelected ? 1 : 0.8}
               eventHandlers={{
-                mouseover: () => handleMarkerHover(earthquake),
                 click: () => handleMarkerClick(earthquake)
               }}
             >
@@ -196,6 +276,5 @@ const MapComponent = ({
       </MapContainer>
     </div>
   );
-};
-
+}
 export default MapComponent;

@@ -30,10 +30,22 @@ def process_geojson_data(input_geojson_path, output_analysis_path):
         else:
             return "Great (7.0+)"
     
-    # 为每个地震特征添加震级分类
-    print("添加震级分类...")
+    # 处理地点名称 - 去掉末尾的 "Earthquake" 字样
+    def clean_place_name(place):
+        # 如果地点以 "Earthquake" 结尾，则去掉
+        if place.endswith(" Earthquake"):
+            place = place[:-11]  # 移除 " Earthquake"
+        # 如果地点包含 ", Earthquake" 这种形式，也需要处理
+        elif ", Earthquake" in place:
+            place = place.replace(", Earthquake", "")
+        return place
+    
+    # 为每个地震特征添加震级分类并清理地点名称
+    print("添加震级分类并处理地点名称...")
     for feature in geojson_data['features']:
         feature['properties']['magnitude_level'] = classify_magnitude(feature['properties']['mag'])
+        # 清理地点名称
+        feature['properties']['place'] = clean_place_name(feature['properties']['place'])
     
     # 提取国家/地区信息并按国家分组
     country_data = {}
