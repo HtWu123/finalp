@@ -95,7 +95,7 @@ def process_geojson_data(input_geojson_path, output_analysis_path):
                 mag_diff = abs(quake1['properties']['mag'] - quake2['properties']['mag'])
                 
                 # 如果地震间隔时间不超过7天且距离不超过5度，则认为有关联
-                if time_diff <= 7 and location_diff <= 6:
+                if time_diff <= 7 and location_diff <= 5:
                     # 计算相似度（加权差异的倒数）
                     similarity = 1 / (1 + 0.4*time_diff + 0.5*location_diff + 0.1*mag_diff)
                     
