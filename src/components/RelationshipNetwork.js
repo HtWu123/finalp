@@ -68,7 +68,7 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
             if (similarity > 0.25) {
               newRelationships[quakeId].push({
                 target_id: quake2.id || quake2.properties.id,
-                similarity: similarity,
+                similarity: adjustedSimilarity,
                 target_mag: quake2.properties.mag,
                 target_place: quake2.properties.place,
                 target_time: quake2.properties.time,
@@ -76,7 +76,8 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
                   (quake2.properties.mag >= 7.0 ? "Great (7.0+)" :
                    quake2.properties.mag >= 6.0 ? "Major (6.0-6.9)" :
                    quake2.properties.mag >= 5.0 ? "Strong (5.0-5.9)" :
-                   "Moderate (4.5-4.9)")
+                   "Moderate (4.5-4.9)"),
+                isLarger: isLargerQuake  // 标记是否是更大震级的地震
               });
             }
           }
@@ -152,6 +153,7 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
         magnitude: rel.target_mag,
         place: rel.target_place,
         isCenter: false,
+        isLarger: rel.isLarger, // 添加是否是更大地震的标记
         time: new Date(rel.target_time).toLocaleString()
       });
       
@@ -196,6 +198,7 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
       .attr("r", d => Math.max(d.magnitude * 2, 4))
       .attr("fill", d => {
         if (d.isCenter) return "#ff4500"; // Center node is orange-red
+        if (d.isLarger) return '#8b0000'; // Larger magnitude earthquakes get a darker red
         
         // Other nodes colored by magnitude
         if (d.magnitude >= 7.0) return '#d73027';
@@ -283,12 +286,16 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
     // Add labels for center node and high-magnitude nodes
     const label = svg.append("g")
       .selectAll("text")
-      .data(nodes.filter(d => d.isCenter || d.magnitude >= 6.0))
+      .data(nodes.filter(d => d.isCenter || d.magnitude >= 6.0 || d.isLarger))
       .enter()
       .append("text")
-      .text(d => d.isCenter ? "当前事件" : `M${d.magnitude.toFixed(1)}`)
+      .text(d => {
+        if (d.isCenter) return "当前事件";
+        if (d.isLarger) return `M${d.magnitude.toFixed(1)}↑`; // 添加上箭头表示更大震级
+        return `M${d.magnitude.toFixed(1)}`;
+      })
       .style("font-size", "10px")
-      .style("font-weight", d => d.isCenter ? "bold" : "normal")
+      .style("font-weight", d => (d.isCenter || d.isLarger) ? "bold" : "normal")
       .attr("dy", -12)
       .attr("text-anchor", "middle");
     
@@ -342,6 +349,7 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
     // Node color legend items
     const legendItems = [
       { color: "#ff4500", label: "当前事件" },
+      { color: "#8b0000", label: "更大震级地震" },
       { color: "#d73027", label: "7.0+" },
       { color: "#fc8d59", label: "6.0-6.9" },
       { color: "#fee08b", label: "5.0-5.9" },
@@ -371,10 +379,10 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
       .style("font-weight", "bold");
       
     const relationshipFactors = [
-      { factor: "时间接近度", weight: "25%" },
+      { factor: "时间接近度", weight: "35%" },
       { factor: "位置接近度", weight: "40%" },
       { factor: "震级相似性", weight: "15%" },
-      { factor: "深度相似性", weight: "20%" }
+      { factor: "深度相似性", weight: "10%" }
     ];
     
     relationshipFactors.forEach((item, i) => {
