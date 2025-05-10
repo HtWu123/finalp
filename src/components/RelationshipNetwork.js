@@ -128,7 +128,7 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
       svg.append("text")
         .attr("x", 20)
         .attr("y", 50)
-        .text("没有找到与此事件相关的地震")
+        .text("No related earthquakes found for this event")
         .style("font-size", "12px")
         .style("fill", "#666");
       return;
@@ -208,14 +208,14 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
       .append("circle")
       .attr("r", d => Math.max(d.magnitude * 2, 4))
       .attr("fill", d => {
-        if (d.isCenter) return "#ff4500"; // Center node is orange-red
+        if (d.isCenter) return "#000000"; // Center node is black
         if (d.isLarger) return '#8b0000'; // Larger magnitude earthquakes get a darker red
         
         // Other nodes colored by magnitude
         if (d.magnitude >= 7.0) return '#d73027';
         if (d.magnitude >= 6.0) return '#fc8d59';
         if (d.magnitude >= 5.0) return '#fee08b';
-        return '#91bfdb';
+        return '#c7e9c0';
       })
       .attr("stroke", "#fff")
       .attr("stroke-width", d => d.isCenter ? 2 : 1)
@@ -250,8 +250,8 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
         // Create tooltip content with HTML for better formatting
         let tooltipContent = `
           <strong>${d.place}</strong><br/>
-          <strong>震级:</strong> ${d.magnitude.toFixed(1)}<br/>
-          <strong>时间:</strong> ${formattedTime}<br/>
+          <strong>Magnitude:</strong> ${d.magnitude.toFixed(1)}<br/>
+          <strong>Time:</strong> ${formattedTime}<br/>
         `;
         
         // Add relationship info if this is not the center node
@@ -264,7 +264,7 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
           
           if (relationship) {
             const similarityPercent = Math.round(relationship.similarity * 100);
-            tooltipContent += `<strong>与所选地震的相似度:</strong> ${similarityPercent}%<br/>`;
+            tooltipContent += `<strong>Similarity to selected quake:</strong> ${similarityPercent}%<br/>`;
           }
         }
         
@@ -316,7 +316,7 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
       .enter()
       .append("text")
       .text(d => {
-        if (d.isCenter) return "当前事件";
+        if (d.isCenter) return "Selected Event";
         if (d.isLarger) return `M${d.magnitude.toFixed(1)}↑`; // 添加上箭头表示更大震级
         return `M${d.magnitude.toFixed(1)}`;
       })
@@ -368,20 +368,21 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
     legend.append("text")
       .attr("x", 0)
       .attr("y", 0)
-      .text("地震关系网络")
+      .text("Earthquake Relationship Network")
       .style("font-size", "11px")
       .style("font-weight", "bold");
     
     // Node color legend items
     const legendItems = [
-      { color: "#ff4500", label: "当前事件" },
-      { color: "#8b0000", label: "更大震级地震" },
-      { color: "#d73027", label: "7.0+" },
+      { color: "#000000", label: "Selected Event" },
+      { color: "#8b0000", label: "Larger Magnitude Quake" },
+      { color: "#ff0000", label: "7.0+" },
       { color: "#fc8d59", label: "6.0-6.9" },
       { color: "#fee08b", label: "5.0-5.9" },
-      { color: "#91bfdb", label: "4.5-4.9" }
+      { color: "#c7e9c0", label: "4.5-4.9" }
     ];
     
+
     legendItems.forEach((item, i) => {
       legend.append("circle")
         .attr("cx", 5)
@@ -400,15 +401,15 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
     legend.append("text")
       .attr("x", 0)
       .attr("y", 23 + legendItems.length * 15 + 10)
-      .text("关系强度基于:")
+      .text("Similarity based on:")
       .style("font-size", "9px")
       .style("font-weight", "bold");
       
     const relationshipFactors = [
-      { factor: "时间接近度", weight: "35%" },
-      { factor: "位置接近度", weight: "40%" },
-      { factor: "震级相似性", weight: "15%" },
-      { factor: "深度相似性", weight: "10%" }
+      { factor: "Time Proximity", weight: "35%" },
+      { factor: "Location Proximity", weight: "40%" },
+      { factor: "Magnitude Similarity", weight: "15%" },
+      { factor: "Depth Similarity", weight: "10%" }
     ];
     
     relationshipFactors.forEach((item, i) => {
@@ -423,7 +424,7 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
     legend.append("text")
       .attr("x", 0)
       .attr("y", 23 + legendItems.length * 15 + 25 + relationshipFactors.length * 12 + 10)
-      .text("提示: 悬停查看详情，点击节点在地图上高亮显示")
+      .text("Tip: Hover to view details, click to highlight on map")
       .style("font-size", "8px")
       .style("font-style", "italic");
     
@@ -442,7 +443,7 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
         borderRadius: '4px',
         color: '#666'
       }}>
-        <p>请点击地图上的地震点查看关系网络</p>
+        <p>Please click an earthquake point on the map to view the relationship network</p>
       </div>
     );
   }
@@ -456,7 +457,7 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
       padding: '10px'
     }}>
       <h3 style={{ margin: '0 0 10px 0', fontSize: '14px' }}>
-        相关地震网络
+        Related Earthquake Network
       </h3>
       <div style={{ flex: 1, width: '100%', position: 'relative' }}>
         <svg ref={svgRef} width="100%" height="100%" />

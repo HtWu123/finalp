@@ -132,10 +132,10 @@ const MapComponent = ({
 
   // 根据震级获取颜色
   const getColor = (magnitude) => {
-    if (magnitude >= 7.0) return '#d73027'; // 巨大 - 红色
+    if (magnitude >= 7.0) return '#ff0000'; // 巨大 - 红色
     if (magnitude >= 6.0) return '#fc8d59'; // 重大 - 橙色
     if (magnitude >= 5.0) return '#fee08b'; // 强烈 - 黄色
-    return '#91bfdb';                       // 中等 - 蓝色
+    return '#c7e9c0';                       // 中等 - 绿色
   };
 
   // 根据震级和是否是活动点获取半径
@@ -261,12 +261,12 @@ const MapComponent = ({
             >
               <Tooltip>
                 <div>
-                  <strong>震级 {earthquake.properties.mag}</strong>
+                  <strong>Magnitude {earthquake.properties.mag}</strong>
                   <p>{earthquake.properties.place}</p>
-                  <p>深度: {earthquake.properties.depth || earthquake.geometry.coordinates[2]} km</p>
-                  <p>时间: {new Date(earthquake.properties.time).toLocaleString()}</p>
+                  <p>Depth: {earthquake.properties.depth || earthquake.geometry.coordinates[2]} km</p>
+                  <p>Time: {new Date(earthquake.properties.time).toLocaleString()}</p>
                   {earthquake.properties.magnitude_level && (
-                    <p>分类: {earthquake.properties.magnitude_level}</p>
+                    <p>Category: {earthquake.properties.magnitude_level}</p>
                   )}
                 </div>
               </Tooltip>

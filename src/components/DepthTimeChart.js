@@ -15,25 +15,20 @@ const DepthTimeChart = ({ countryData, country }) => {
   const [chartData, setChartData] = useState([]);
   
   useEffect(() => {
-    // 如果没有countryData，直接返回空数据
     if (!countryData) {
       setChartData([]);
       return;
     }
-    
-    // 如果country是"Unknown"，我们显示所有国家/地区的数据
+
     if (country === "Unknown") {
-      // 收集所有国家/地区的数据
       let allData = [];
-      
-      // 遍历所有国家/地区的数据并合并
+
       Object.keys(countryData).forEach(countryKey => {
         if (Array.isArray(countryData[countryKey])) {
           allData = [...allData, ...countryData[countryKey]];
         }
       });
-      
-      // 格式化合并后的数据
+
       const formattedData = allData.map(eq => {
         const timeValue = typeof eq.time === 'string' 
           ? new Date(eq.time).getTime() 
@@ -48,20 +43,16 @@ const DepthTimeChart = ({ countryData, country }) => {
           id: eq.id
         };
       });
-      
-      // 过滤无效数据
+
       const validData = formattedData.filter(d => 
         !isNaN(d.time) && !isNaN(d.depth) && d.time > 0
       );
-      
-      // 按时间排序
+
       validData.sort((a, b) => a.time - b.time);
-      
+
       setChartData(validData);
     } 
-    // 常规情况：显示特定国家/地区的数据
     else if (country && countryData[country]) {
-      // 格式化数据
       const formattedData = countryData[country].map(eq => {
         const timeValue = typeof eq.time === 'string' 
           ? new Date(eq.time).getTime() 
@@ -76,23 +67,19 @@ const DepthTimeChart = ({ countryData, country }) => {
           id: eq.id
         };
       });
-      
-      // 过滤无效数据
+
       const validData = formattedData.filter(d => 
         !isNaN(d.time) && !isNaN(d.depth) && d.time > 0
       );
-      
-      // 按时间排序
+
       validData.sort((a, b) => a.time - b.time);
-      
+
       setChartData(validData);
     } else {
-      // 如果没有country或者countryData中没有该country，则清空数据
       setChartData([]);
     }
   }, [countryData, country]);
 
-  // Custom tooltip to display information
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
@@ -114,7 +101,6 @@ const DepthTimeChart = ({ countryData, country }) => {
     return null;
   };
 
-  // Return an empty div if no data
   if (chartData.length === 0) {
     return (
       <div className="depth-time-chart-container" style={{ 
@@ -127,30 +113,26 @@ const DepthTimeChart = ({ countryData, country }) => {
         borderRadius: '4px',
         color: '#666'
       }}>
-        <p>点击地图上的地震点以查看深度-时间数据</p>
+        <p>Click a point on the map to view depth-time data</p>
       </div>
     );
   }
 
-  // 计算时间的最小值和最大值，确保有适当的范围
   const timeMin = Math.min(...chartData.map(d => d.time));
   const timeMax = Math.max(...chartData.map(d => d.time));
-  // 确保有1天的范围，防止单点的情况
   const timeRange = Math.max(timeMax - timeMin, 24 * 60 * 60 * 1000);
   const domain = [
     timeMin - timeRange * 0.05, 
     timeMax + timeRange * 0.05
   ];
 
-  // 格式化时间标签
   const formatXAxis = (timestamp) => {
     return new Date(timestamp).toLocaleDateString();
   };
 
-  // 根据country确定标题文本
   const titleText = country === "Unknown" 
-    ? "全球地震深度-时间分布" 
-    : `${country} 地区地震深度-时间分布`;
+    ? "Global Earthquake Depth-Time Distribution" 
+    : `Earthquake Depth-Time Distribution in ${country}`;
 
   return (
     <div className="depth-time-chart-container" style={{ 
@@ -177,39 +159,38 @@ const DepthTimeChart = ({ countryData, country }) => {
               scale="time"
               tickFormatter={formatXAxis}
               tickCount={3}
-              label={{ value: '时间', position: 'insideBottomRight', offset: -5, fontSize: 12 }}
+              label={{ value: 'Time', position: 'insideBottomRight', offset: -5, fontSize: 12 }}
               fontSize={11}
             />
             <YAxis
               dataKey="depth"
               name="Depth (km)"
               label={{
-                value: '深度 (km)',
+                value: 'Depth (km)',
                 angle: -90,
                 position: 'insideLeft',
                 fontSize: 12
               }}
               domain={[0, 'dataMax']}
-              reversed={true} // Make the y-axis arrow point downward
+              reversed={true}
               fontSize={11}
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend wrapperStyle={{ fontSize: '11px' }} />
             <Scatter
-              name="地震事件"
+              name="Earthquake Events"
               data={chartData}
               fill="#8884d8"
               shape={(props) => {
                 if (!props.cx || !props.cy || isNaN(props.cx) || isNaN(props.cy)) {
-                  return null; // 跳过无效坐标的点
+                  return null;
                 }
                 
                 const { cx, cy } = props;
                 let size = 1;
-                // Get color based on magnitude
                 let color = '#91bfdb';
                 if (props.payload.magnitude >= 7.0) {
-                  color = '#d73027'; 
+                  color = '#ff0000'; 
                   size = 10;
                 } else if (props.payload.magnitude >= 6.0) {
                   color = '#fc8d59';
@@ -218,7 +199,7 @@ const DepthTimeChart = ({ countryData, country }) => {
                   color = '#fee08b';
                   size = 5;
                 } else {
-                  color = '#91bfdb';
+                  color = '#c7e9c0';
                   size = 3;
                 }
                 
