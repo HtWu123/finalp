@@ -1,22 +1,125 @@
 // src/components/RelationshipNetwork/RelationshipNetwork.js
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 
 const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData }) => {
   const svgRef = useRef(null);
+  const [generatedRelationships, setGeneratedRelationships] = useState(null);
+  
+  // This function generates relationships on the client side if none are provided
+  useEffect(() => {
+    if (!relationships || Object.keys(relationships).length === 0) {
+      // Only generate relationships if they don't exist and we have data
+      if (selectedEarthquake && earthquakeData && earthquakeData.features) {
+        console.log("Generating client-side relationships for earthquake:", selectedEarthquake.id);
+        
+        const quakeId = selectedEarthquake.id || selectedEarthquake.properties.id;
+        const newRelationships = {};
+        newRelationships[quakeId] = [];
+        
+        // Get all earthquakes with magnitude >= 5.0
+        const significantQuakes = earthquakeData.features.filter(
+          eq => eq.properties.mag >= 5.0
+        );
+        
+        // Calculate relationships
+        for (const quake2 of significantQuakes) {
+          // Skip comparing with itself
+          if ((quake2.id || quake2.properties.id) === quakeId) continue;
+          
+          // Calculate time difference in days
+          const time1 = selectedEarthquake.properties.time;
+          const time2 = quake2.properties.time;
+          const timeDiff = Math.abs(time1 - time2) / (24 * 60 * 60 * 1000);
+          
+          // Calculate location difference using Haversine formula for better accuracy
+          const loc1 = selectedEarthquake.geometry.coordinates;
+          const loc2 = quake2.geometry.coordinates;
+          
+          // Convert to radians
+          const lat1 = loc1[1] * Math.PI / 180;
+          const lon1 = loc1[0] * Math.PI / 180;
+          const lat2 = loc2[1] * Math.PI / 180;
+          const lon2 = loc2[0] * Math.PI / 180;
+          
+          // Haversine formula
+          const dlon = lon2 - lon1;
+          const dlat = lat2 - lat1;
+          const a = Math.sin(dlat/2)**2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dlon/2)**2;
+          const c = 2 * Math.asin(Math.sqrt(a));
+          const R = 6371; // Radius of Earth in kilometers
+          const distance = c * R;
+          
+          // Convert distance to an approximate degree equivalent (1 degree ≈ 111 km)
+          const locationDiff = distance / 111;
+          
+          // Calculate magnitude difference
+          const magDiff = Math.abs(selectedEarthquake.properties.mag - quake2.properties.mag);
+          
+          // Calculate depth difference (might be useful as another factor)
+          const depthDiff = Math.abs(loc1[2] - loc2[2]) / 100; // Normalize by 100km
+          
+          // Calculate similarity - consider related if within 7 days and 5 degrees distance
+          if (timeDiff <= 7 && locationDiff <= 5) {
+            // Adjusted similarity formula with depth factor
+            const similarity = 1 / (1 + 0.25*timeDiff + 0.4*locationDiff + 0.15*magDiff + 0.2*depthDiff);
+            
+            // Only include significant relationships
+            if (similarity > 0.25) {
+              newRelationships[quakeId].push({
+                target_id: quake2.id || quake2.properties.id,
+                similarity: similarity,
+                target_mag: quake2.properties.mag,
+                target_place: quake2.properties.place,
+                target_time: quake2.properties.time,
+                target_magnitude_level: quake2.properties.magnitude_level || 
+                  (quake2.properties.mag >= 7.0 ? "Great (7.0+)" :
+                   quake2.properties.mag >= 6.0 ? "Major (6.0-6.9)" :
+                   quake2.properties.mag >= 5.0 ? "Strong (5.0-5.9)" :
+                   "Moderate (4.5-4.9)")
+              });
+            }
+          }
+        }
+        
+        // Sort by similarity (highest first)
+        newRelationships[quakeId].sort((a, b) => b.similarity - a.similarity);
+        
+        // Limit to top 10 most similar earthquakes for better visualization
+        if (newRelationships[quakeId].length > 10) {
+          newRelationships[quakeId] = newRelationships[quakeId].slice(0, 10);
+        }
+        
+        console.log(`Generated ${newRelationships[quakeId].length} relationships`);
+        setGeneratedRelationships(newRelationships);
+      }
+    }
+  }, [selectedEarthquake, earthquakeData, relationships]);
+  
+  // Use either provided relationships or generated ones
+  const effectiveRelationships = relationships && Object.keys(relationships).length > 0 
+    ? relationships 
+    : generatedRelationships;
   
   useEffect(() => {
-    // 确保所有必要的数据都存在，并且在客户端环境中
-    if (!relationships || !selectedEarthquake || !earthquakeData || !svgRef.current || typeof window === 'undefined') return;
+    // Ensure all necessary data exists, and we're in client environment
+    if (!selectedEarthquake || !earthquakeData || !svgRef.current || typeof window === 'undefined') return;
     
-    // 清除先前的可视化
+    // Clear previous visualization
     d3.select(svgRef.current).selectAll("*").remove();
     
-    // 获取选定地震的关系
-    const quakeId = selectedEarthquake.properties.id;
-    const quakeRelationships = relationships[quakeId] || [];
+    // Remove any existing tooltips from previous renders
+    d3.select("body").selectAll(".earthquake-tooltip").remove();
     
-    // 如果没有关系，显示消息
+    // Get the earthquake ID
+    const quakeId = selectedEarthquake.id || selectedEarthquake.properties.id;
+    
+    // Get relationships for this earthquake
+    const quakeRelationships = effectiveRelationships && effectiveRelationships[quakeId] 
+      ? effectiveRelationships[quakeId] 
+      : [];
+    
+    // If no relationships, show message
     if (quakeRelationships.length === 0) {
       const svg = d3.select(svgRef.current);
       svg.append("text")
@@ -28,9 +131,9 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
       return;
     }
     
-    // 准备网络数据
+    // Prepare network data
     const nodes = [
-      // 中心节点（选定的地震）
+      // Center node (selected earthquake)
       {
         id: quakeId,
         magnitude: selectedEarthquake.properties.mag,
@@ -42,7 +145,7 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
     
     const links = [];
     
-    // 添加相关地震
+    // Add related earthquakes
     quakeRelationships.forEach(rel => {
       nodes.push({
         id: rel.target_id,
@@ -59,32 +162,32 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
       });
     });
     
-    // 获取容器尺寸
+    // Get container dimensions
     const containerWidth = svgRef.current.clientWidth || 300;
     const containerHeight = svgRef.current.clientHeight || 200;
     
-    // 创建SVG
+    // Create SVG
     const svg = d3.select(svgRef.current)
       .attr("width", containerWidth)
       .attr("height", containerHeight);
     
-    // 创建网络的力模型
+    // Create network's force model
     const simulation = d3.forceSimulation(nodes)
       .force("link", d3.forceLink(links).id(d => d.id).distance(d => 150 - d.similarity * 80))
       .force("charge", d3.forceManyBody().strength(-200))
       .force("center", d3.forceCenter(containerWidth / 2, containerHeight / 2));
     
-    // 创建连接线
+    // Create links
     const link = svg.append("g")
       .selectAll("line")
       .data(links)
       .enter()
       .append("line")
-      .attr("stroke-width", d => d.similarity * 2)
+      .attr("stroke-width", d => d.similarity * 3) // Thicker lines for stronger relationships
       .attr("stroke", "#999")
       .attr("stroke-opacity", 0.6);
     
-    // 创建节点
+    // Create nodes
     const node = svg.append("g")
       .selectAll("circle")
       .data(nodes)
@@ -92,9 +195,9 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
       .append("circle")
       .attr("r", d => Math.max(d.magnitude * 2, 4))
       .attr("fill", d => {
-        if (d.isCenter) return "#ff4500"; // 中心节点为橙红色
+        if (d.isCenter) return "#ff4500"; // Center node is orange-red
         
-        // 其他节点按震级着色
+        // Other nodes colored by magnitude
         if (d.magnitude >= 7.0) return '#d73027';
         if (d.magnitude >= 6.0) return '#fc8d59';
         if (d.magnitude >= 5.0) return '#fee08b';
@@ -107,23 +210,89 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
         .on("drag", dragged)
         .on("end", dragended));
     
-    // 添加工具提示
-    node.append("title")
-      .text(d => `${d.place}\n震级: ${d.magnitude}\n时间: ${d.time}`);
+    // Create a more interactive tooltip div instead of using the default title attribute
+    const tooltip = d3.select("body").append("div")
+      .attr("class", "earthquake-tooltip")
+      .style("position", "absolute")
+      .style("background", "white")
+      .style("padding", "8px")
+      .style("border-radius", "4px")
+      .style("box-shadow", "0 0 10px rgba(0,0,0,0.2)")
+      .style("pointer-events", "none")
+      .style("font-size", "12px")
+      .style("z-index", "1000")
+      .style("opacity", 0);
     
-    // 仅对中心节点和高震级节点添加标签
+    // Add hover effects and tooltip interaction
+    node.on("mouseover", function(event, d) {
+        // Highlight the node
+        d3.select(this)
+          .transition()
+          .duration(200)
+          .attr("stroke", "#ff0000")
+          .attr("stroke-width", 2);
+        
+        // Show tooltip with more detailed information
+        tooltip.transition()
+          .duration(200)
+          .style("opacity", 0.9);
+        
+        // Format the time
+        const formattedTime = d.time;
+        
+        // Create tooltip content with HTML for better formatting
+        let tooltipContent = `
+          <strong>${d.place}</strong><br/>
+          <strong>震级:</strong> ${d.magnitude.toFixed(1)}<br/>
+          <strong>时间:</strong> ${formattedTime}<br/>
+        `;
+        
+        // Add relationship info if this is not the center node
+        if (!d.isCenter && selectedEarthquake) {
+          // Find this node's relationship with the center
+          const relationship = links.find(link => 
+            (link.source.id === d.id && link.target.id === selectedEarthquake.id) || 
+            (link.target.id === d.id && link.source.id === selectedEarthquake.id)
+          );
+          
+          if (relationship) {
+            const similarityPercent = Math.round(relationship.similarity * 100);
+            tooltipContent += `<strong>与所选地震的相似度:</strong> ${similarityPercent}%<br/>`;
+          }
+        }
+        
+        // Set tooltip content and position
+        tooltip.html(tooltipContent)
+          .style("left", (event.pageX + 15) + "px")
+          .style("top", (event.pageY - 28) + "px");
+      })
+      .on("mouseout", function() {
+        // Restore original node appearance
+        d3.select(this)
+          .transition()
+          .duration(500)
+          .attr("stroke", "#fff")
+          .attr("stroke-width", d => d.isCenter ? 2 : 1);
+        
+        // Hide tooltip
+        tooltip.transition()
+          .duration(500)
+          .style("opacity", 0);
+      });
+    
+    // Add labels for center node and high-magnitude nodes
     const label = svg.append("g")
       .selectAll("text")
       .data(nodes.filter(d => d.isCenter || d.magnitude >= 6.0))
       .enter()
       .append("text")
       .text(d => d.isCenter ? "当前事件" : `M${d.magnitude.toFixed(1)}`)
-      .style("font-size", "9px")
+      .style("font-size", "10px")
       .style("font-weight", d => d.isCenter ? "bold" : "normal")
-      .attr("dy", -10)
+      .attr("dy", -12)
       .attr("text-anchor", "middle");
     
-    // 在模拟过程中更新位置
+    // Update positions during simulation
     simulation.on("tick", () => {
       link
         .attr("x1", d => d.source.x)
@@ -140,7 +309,7 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
         .attr("y", d => d.y);
     });
     
-    // 拖拽函数
+    // Drag functions
     function dragstarted(event, d) {
       if (!event.active) simulation.alphaTarget(0.3).restart();
       d.fx = d.x;
@@ -158,11 +327,11 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
       d.fy = null;
     }
     
-    // 添加图例 - 在面板模式下简化图例
+    // Add legend
     const legend = svg.append("g")
       .attr("transform", "translate(10,10)");
     
-    // 添加标题
+    // Add title
     legend.append("text")
       .attr("x", 0)
       .attr("y", 0)
@@ -170,7 +339,7 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
       .style("font-size", "11px")
       .style("font-weight", "bold");
     
-    // 节点颜色图例项目（简化版）
+    // Node color legend items
     const legendItems = [
       { color: "#ff4500", label: "当前事件" },
       { color: "#d73027", label: "7.0+" },
@@ -193,9 +362,40 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
         .style("font-size", "9px");
     });
     
-  }, [relationships, selectedEarthquake, earthquakeData]);
+    // Add relationship strength explanation
+    legend.append("text")
+      .attr("x", 0)
+      .attr("y", 23 + legendItems.length * 15 + 10)
+      .text("关系强度基于:")
+      .style("font-size", "9px")
+      .style("font-weight", "bold");
+      
+    const relationshipFactors = [
+      { factor: "时间接近度", weight: "25%" },
+      { factor: "位置接近度", weight: "40%" },
+      { factor: "震级相似性", weight: "15%" },
+      { factor: "深度相似性", weight: "20%" }
+    ];
+    
+    relationshipFactors.forEach((item, i) => {
+      legend.append("text")
+        .attr("x", 10)
+        .attr("y", 23 + legendItems.length * 15 + 25 + i * 12)
+        .text(`${item.factor} (${item.weight})`)
+        .style("font-size", "8px");
+    });
+    
+    // Add hover instruction
+    legend.append("text")
+      .attr("x", 0)
+      .attr("y", 23 + legendItems.length * 15 + 25 + relationshipFactors.length * 12 + 10)
+      .text("提示: 将鼠标悬停在节点上可查看详细信息")
+      .style("font-size", "8px")
+      .style("font-style", "italic");
+    
+  }, [selectedEarthquake, earthquakeData, effectiveRelationships]);
   
-  // 如果没有选择地震，显示提示消息
+  // If no earthquake selected, show prompt message
   if (!selectedEarthquake) {
     return (
       <div className="relationship-network-container" style={{ 

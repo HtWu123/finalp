@@ -65,12 +65,12 @@ def process_geojson_data(input_geojson_path, output_analysis_path):
     country_counts = sorted(country_counts, key=lambda x: x['count'], reverse=True)
     
     # 创建地震关系网络数据
-    # 只为重大地震(震级>=5.5)创建关系网络
+    # 只为重大地震(震级>=4.5)创建关系网络
     print("正在创建地震关系网络...")
     quake_relationships = {}
     
     # 获取重大地震
-    significant_quakes = [f for f in geojson_data['features'] if f['properties']['mag'] >= 5.5]
+    significant_quakes = [f for f in geojson_data['features'] if f['properties']['mag'] >= 4.5]
     print(f"将为 {len(significant_quakes)} 个重大地震创建关系网络")
     
     for i, quake1 in enumerate(significant_quakes):
