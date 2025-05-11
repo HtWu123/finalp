@@ -1,6 +1,8 @@
 // src/components/RelationshipNetwork/RelationshipNetwork.js
 import { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
+import { MapContainer, TileLayer, CircleMarker, Popup } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
 
 const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData, onNodeHover }) => {
   const svgRef = useRef(null);
@@ -130,7 +132,7 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
         .attr("y", 50)
         .text("No related earthquakes found for this event")
         .style("font-size", "12px")
-        .style("fill", "#666");
+        .style("fill", "#666");//灰色
       return;
     }
     
@@ -197,7 +199,7 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
       .enter()
       .append("line")
       .attr("stroke-width", d => d.similarity * 3) // Thicker lines for stronger relationships
-      .attr("stroke", "#999")
+      .attr("stroke", "#999")//淡灰色
       .attr("stroke-opacity", 0.6);
     
     // Create nodes
@@ -208,8 +210,8 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
       .append("circle")
       .attr("r", d => Math.max(d.magnitude * 2, 4))
       .attr("fill", d => {
-        if (d.isCenter) return "#000000"; // Center node is black
-        if (d.isLarger) return '#8b0000'; // Larger magnitude earthquakes get a darker red
+        // if (d.isCenter) return "#000000"; // Center node is black
+        // if (d.isLarger) return '#8b0000'; // Larger magnitude earthquakes get a darker red
         
         // Other nodes colored by magnitude
         if (d.magnitude >= 7.0) return '#d73027';
@@ -217,8 +219,14 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
         if (d.magnitude >= 5.0) return '#fee08b';
         return '#c7e9c0';
       })
-      .attr("stroke", "#fff")
-      .attr("stroke-width", d => d.isCenter ? 2 : 1)
+      .attr("stroke", d => {
+        // Check if this node is the selected (clicked) earthquake
+        if (d.id === quakeId) { 
+          return "#38f"; // Blue ring for selected earthquake
+        }
+        return "#fff"; // Default white border
+      })
+      .attr("stroke-width", d => d.isCenter ? 5 : 0.1)
       .call(d3.drag()
         .on("start", dragstarted)
         .on("drag", dragged)
@@ -282,11 +290,10 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
       // 添加点击事件
       .on("click", function(event, d) {
         // 清除所有节点的高亮
-        node.transition()
-          .duration(200)
-          .attr("stroke", "#fff")
-          .attr("stroke-width", d => d.isCenter ? 2 : 1);
-        
+        // node.transition()
+        //   .duration(200)
+        //   .attr("stroke", "#fff")//白色
+        //   .attr("stroke-width", d => d.isCenter ? 2 : 1);
         // 如果点击的是中心节点，取消选择
         if (d.isCenter) {
           // 调用传入的onNodeHover回调，传递null表示取消选择
@@ -300,8 +307,8 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
         d3.select(this)
           .transition()
           .duration(200)
-          .attr("stroke", "#ff0000")
-          .attr("stroke-width", 2);
+          .attr("stroke", "#ff0000")//红色
+          .attr("stroke-width", 5);
         
         // 调用传入的onNodeHover回调，传递原始地震数据
         if (onNodeHover && d.originalData) {
@@ -374,8 +381,8 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
     
     // Node color legend items
     const legendItems = [
-      { color: "#000000", label: "Selected Event" },
-      { color: "#8b0000", label: "Larger Magnitude Quake" },
+      // { color: "#000000", label: "Selected Event" },
+      // { color: "#8b0000", label: "Larger Magnitude Quake" },
       { color: "#ff0000", label: "7.0+" },
       { color: "#fc8d59", label: "6.0-6.9" },
       { color: "#fee08b", label: "5.0-5.9" },
@@ -423,9 +430,9 @@ const RelationshipNetwork = ({ relationships, selectedEarthquake, earthquakeData
     // Add click instruction
     legend.append("text")
       .attr("x", 0)
-      .attr("y", 23 + legendItems.length * 15 + 25 + relationshipFactors.length * 12 + 10)
+      .attr("y", 23 + legendItems.length * 15 + 25 + relationshipFactors.length * 12 + 4)
       .text("Tip: Hover to view details, click to highlight on map")
-      .style("font-size", "8px")
+      .style("font-size", "9px")
       .style("font-style", "italic");
     
   }, [selectedEarthquake, earthquakeData, effectiveRelationships, onNodeHover]);

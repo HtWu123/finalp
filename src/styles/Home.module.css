@@ -9,22 +9,24 @@
   align-items: center;
   max-width: 1400px;
   margin: 0 auto;
+  overflow-x: hidden; /* 防止水平滚动 */
+  position: relative; /* 确保绝对定位的子元素相对于它定位 */
 }
 
 .title {
   margin: 0;
-  line-height: 1.15;
-  font-size: 2.5rem;
+  line-height: 1;
+  font-size: 2rem;
   text-align: center;
-  margin-top: 2rem;
-  margin-bottom: 0.5rem;
+  margin-top: 1rem;
+  margin-bottom: 0.25rem;
 }
 
 .description {
   text-align: center;
-  line-height: 1.5;
-  font-size: 1.25rem;
-  margin-bottom: 2rem;
+  line-height: 1.2;
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
 }
 
 .main {
@@ -33,16 +35,18 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  overflow-x: hidden; /* 防止水平滚动 */
 }
 
 /* 内容容器 */
 .contentContainer {
   position: relative;
   width: 100%;
-  height: calc(100vh - 220px);
-  min-height: 500px;
+  height: calc(100vh - 150px); /* 减少顶部占用的空间 */
+  min-height: 600px;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden; /* 防止水平滚动 */
 }
 
 /* 筛选器容器 */
@@ -52,9 +56,9 @@
   align-items: center;
   justify-content: space-between;
   background-color: #f5f5f5;
-  padding: 10px;
+  padding: 8px 10px;
   border-radius: 5px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   z-index: 5;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
@@ -71,26 +75,28 @@
   background-color: #f8f8f8;
 }
 
-/* 滑动详情面板 */
+/* 滑动详情面板 - 使用Transform */
 .detailPanel {
   position: absolute;
-  right: -50%;
+  right: 0;
   top: 0;
   width: 50%;
   height: 100%;
   background: white;
-  transition: right 0.3s ease;
   z-index: 10;
   box-shadow: -3px 0 10px rgba(0, 0, 0, 0.1);
   border-left: 1px solid #e0e0e0;
   display: flex;
   flex-direction: column;
   border-radius: 5px 0 0 5px;
+  overflow-x: hidden; /* 防止内部内容溢出 */
+  transform: translateX(100%); /* 初始状态：完全移出视图 */
+  transition: transform 0.3s ease; /* 过渡效果 */
 }
 
 /* 面板打开状态 */
 .detailPanel.open {
-  right: 0;
+  transform: translateX(0); /* 打开状态：回到原位 */
 }
 
 /* 面板头部 */
@@ -98,7 +104,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px 20px;
+  padding: 10px 15px;
   border-bottom: 1px solid #eaeaea;
   background-color: #f9f9f9;
   border-radius: 5px 0 0 0;
@@ -106,7 +112,7 @@
 
 .panelTitle {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 600;
   color: #333;
   flex: 1;
@@ -169,10 +175,10 @@
 
 /* 加载和错误状态 */
 .loading, .error {
-  margin: 2rem auto;
+  margin: 1.5rem auto;
   text-align: center;
   color: #666;
-  padding: 2rem;
+  padding: 1.5rem;
 }
 
 .error {
@@ -182,18 +188,19 @@
 /* 底部栏 */
 .footer {
   width: 100%;
-  height: 80px;
+  height: 60px; /* 减少底部占用的空间 */
   border-top: 1px solid #eaeaea;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  margin-top: 2rem;
+  margin-top: 1rem;
 }
 
 .footer p {
-  margin: 0.25rem 0;
+  margin: 0.2rem 0;
   color: #666;
+  font-size: 0.9rem;
 }
 
 /* 响应式布局 */
@@ -206,7 +213,7 @@
   
   .detailPanel {
     width: 80%;
-    right: -80%;
+    /* 不需要右侧定位 */
   }
 }
 

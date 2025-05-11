@@ -227,6 +227,7 @@ export default function Home() {
               />
             </div>
 
+            {/* 使用新的详情面板实现 */}
             <div className={`${styles.detailPanel} ${isPanelOpen ? styles.open : ''}`}>
               <div className={styles.panelHeader}>
                 {selectedEarthquake && (
