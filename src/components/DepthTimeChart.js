@@ -159,7 +159,9 @@ const DepthTimeChart = ({ countryData, country }) => {
               scale="time"
               tickFormatter={formatXAxis}
               tickCount={3}
-              label={{ value: 'Time', position: 'insideBottomRight', offset: -5, fontSize: 12 }}
+              orientation="top"
+              label={{ value: 'Time', position: 'insideTopRight', offset: -5, fontSize: 12 }}
+              // label={{ value: 'Time', position: 'insideBottomRight', offset: -5, fontSize: 12 }}
               fontSize={11}
             />
             <YAxis
